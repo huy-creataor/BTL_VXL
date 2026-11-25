@@ -68,7 +68,7 @@ void fsm_tuning_init(void)
 
     status = TUN_RED;
     blink_on = 1U;
-    traffic_set_both(RED, RED);
+    traffic_set_tuning(RED);
 
     setTimer(TIMER_BLINK, TUNING_BLINK_MS);
     setTimer(TIMER_LCD, TUNING_LCD_MS);
@@ -90,6 +90,9 @@ void fsm_tuning_run(void)
 
     /* Exit tuning without saving if MODE is pressed */
     if (isButtonPressed(BTN_MODE) != 0U) {
+        clearTimer(TIMER_BLINK);
+        clearTimer(TIMER_LCD);
+        button_clear_all();
         traffic_all_red();
         status = AUTO_INIT;
         return;
@@ -100,7 +103,7 @@ void fsm_tuning_run(void)
         blink_on = (blink_on == 0U) ? 1U : 0U;
         if (blink_on != 0U) {
             TrafficColor_t c = tuning_get_active_color(status);
-            traffic_set_both(c, c);
+            traffic_set_tuning(c);
         } else {
             traffic_all_off();
         }
@@ -122,16 +125,19 @@ void fsm_tuning_run(void)
         if (status == TUN_RED) {
             status = TUN_GREEN;
             blink_on = 1U;
-            traffic_set_both(GREEN, GREEN);
+            traffic_set_tuning(GREEN);
         } else if (status == TUN_GREEN) {
             status = TUN_AMBER;
             blink_on = 1U;
-            traffic_set_both(AMBER, AMBER);
+            traffic_set_tuning(AMBER);
         } else {
             if (fsm_tuning_validate(temp_time_red_s, temp_time_green_s, temp_time_amber_s) != 0U) {
                 time_red_s = temp_time_red_s;
                 time_green_s = temp_time_green_s;
                 time_amber_s = temp_time_amber_s;
+                clearTimer(TIMER_BLINK);
+                clearTimer(TIMER_LCD);
+                button_clear_all();
                 traffic_all_red();
                 status = AUTO_INIT;
                 return;
@@ -139,7 +145,7 @@ void fsm_tuning_run(void)
                 lcd_display_error("R != G + A");
                 status = TUN_RED;
                 blink_on = 1U;
-                traffic_set_both(RED, RED);
+                traffic_set_tuning(RED);
                 setTimer(TIMER_LCD, 800U);
                 return;
             }

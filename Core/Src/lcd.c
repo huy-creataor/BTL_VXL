@@ -117,8 +117,8 @@ void lcd_print_int(int32_t value)
 
 void lcd_display_auto(uint16_t t1_s, uint16_t t2_s, float temp_c, float hum_pct, uint8_t env_valid)
 {
-    char line0[LCD_COLS + 1U];
-    char line1[LCD_COLS + 1U];
+    char line0[32];
+    char line1[32];
 
     snprintf(line0, sizeof(line0), "AUTO L1:%02u L2:%02u", (unsigned)t1_s, (unsigned)t2_s);
     lcd_format_env_line(line1, sizeof(line1), temp_c, hum_pct, env_valid);
@@ -129,10 +129,10 @@ void lcd_display_auto(uint16_t t1_s, uint16_t t2_s, float temp_c, float hum_pct,
 
 void lcd_display_manual(const char *phase_label, float temp_c, float hum_pct, uint8_t env_valid)
 {
-    char line0[LCD_COLS + 1U];
-    char line1[LCD_COLS + 1U];
+    char line0[32];
+    char line1[32];
 
-    snprintf(line0, sizeof(line0), "MAN: %-11s", (phase_label != NULL) ? phase_label : "---");
+    snprintf(line0, sizeof(line0), "MAN: %-11.11s", (phase_label != NULL) ? phase_label : "---");
     lcd_format_env_line(line1, sizeof(line1), temp_c, hum_pct, env_valid);
 
     lcd_print_line(0U, line0);
@@ -141,11 +141,11 @@ void lcd_display_manual(const char *phase_label, float temp_c, float hum_pct, ui
 
 void lcd_display_tuning(const char *color_label, uint16_t value_s, uint16_t red_s, uint16_t green_s, uint16_t amber_s)
 {
-    char line0[LCD_COLS + 1U];
-    char line1[LCD_COLS + 1U];
+    char line0[32];
+    char line1[32];
     const char *ok_str = (red_s == (uint16_t)(green_s + amber_s)) ? "OK" : "ER";
 
-    snprintf(line0, sizeof(line0), "TUN %-5s Val:%02u", (color_label != NULL) ? color_label : "?", (unsigned)value_s);
+    snprintf(line0, sizeof(line0), "TUN %-5.5s Val:%02u", (color_label != NULL) ? color_label : "?", (unsigned)value_s);
     snprintf(line1, sizeof(line1), "R%02u G%02u A%02u %s", (unsigned)red_s, (unsigned)green_s, (unsigned)amber_s, ok_str);
 
     lcd_print_line(0U, line0);
