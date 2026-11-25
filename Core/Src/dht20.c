@@ -8,6 +8,7 @@
 #include "dht20.h"
 #include "pin_config.h"
 #include "global.h"
+#include <stddef.h>
 
 #define DHT20_I2C_TIMEOUT_MS    10U
 #define DHT20_WAIT_TICKS        2U      /* 2 * 50 ms = 100 ms (>= 80 ms) */

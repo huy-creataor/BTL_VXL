@@ -63,6 +63,45 @@ static void system_fsm_task(void)
     }
 }
 
+static void lcd_update_task(void)
+{
+    switch (status) {
+        case AUTO_RED1_GREEN2:
+        case AUTO_RED1_AMBER2:
+        case AUTO_GREEN1_RED2:
+        case AUTO_AMBER1_RED2:
+            lcd_display_auto(countdown_lane1, countdown_lane2,
+                             env_temperature, env_humidity, env_data_valid);
+            break;
+
+        case MAN_RED1_GREEN2:
+            lcd_display_manual("R1 - G2", env_temperature, env_humidity, env_data_valid);
+            break;
+        case MAN_RED1_AMBER2:
+            lcd_display_manual("R1 - A2", env_temperature, env_humidity, env_data_valid);
+            break;
+        case MAN_GREEN1_RED2:
+            lcd_display_manual("G1 - R2", env_temperature, env_humidity, env_data_valid);
+            break;
+        case MAN_AMBER1_RED2:
+            lcd_display_manual("A1 - R2", env_temperature, env_humidity, env_data_valid);
+            break;
+        case MAN_ALL_RED:
+            lcd_display_manual("ALL RED", env_temperature, env_humidity, env_data_valid);
+            break;
+
+        case TUN_INIT:
+        case TUN_RED:
+        case TUN_GREEN:
+        case TUN_AMBER:
+            /* LCD is managed directly by fsm_tuning.c (including error message) */
+            break;
+
+        default:
+            break;
+    }
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM2) {
@@ -91,6 +130,7 @@ int main(void)
     SCH_Add_Task(button_read, 0U, 1U);      /* 10 ms */
     SCH_Add_Task(system_fsm_task, 1U, 1U);  /* 10 ms */
     SCH_Add_Task(dht20_task, 2U, 5U);       /* 50 ms */
+    SCH_Add_Task(lcd_update_task, 5U, 20U); /* 50 ms offset, 200 ms period */
 
     HAL_TIM_Base_Start_IT(&htim2);
 
