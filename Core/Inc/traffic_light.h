@@ -54,4 +54,12 @@ void traffic_all_off(void);
  */
 void traffic_all_red(void);
 
+/**
+ * @brief Set both traffic light modules to the same color for TUNING mode
+ *        visual indication (blinking RED, GREEN, or AMBER during setup).
+ * @note  For TUNING mode only — operational modes (AUTO/MANUAL) must use
+ *        traffic_set_both() which enforces the dual-GREEN safety invariant.
+ */
+void traffic_set_tuning(TrafficColor_t color);
+
 #endif /* INC_TRAFFIC_LIGHT_H_ */
