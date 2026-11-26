@@ -313,9 +313,17 @@ Với `f_TIM2 = 64 MHz` (mặc định Nucleo-F103RB HSI+PLL): chọn `PSC = 639
 - **Nhấn ngắn & Nhấn giữ**: Khi phát hiện cạnh chuyển `0 -> 1`, bật `press_flag[i] = 1` (hàm `isButtonPressed()` đọc xong tự xóa cờ) và nạp `hold_counter[i] = BTN_LONG_PRESS_TICKS` (`100` ticks = `1000 ms`). Nếu người dùng giữ nút đủ `1000 ms`, bật `long_press_flag[i] = 1` (`isButtonLongPressed()`) và tự lặp lại mỗi `BTN_AUTO_REPEAT_TICKS` (`25` ticks = `250 ms`). Hàm `button_clear_all()` xóa sạch các cờ tồn đọng khi đổi chế độ.
 
 #### 3.3.3 Module điều khiển đèn giao thông
-- Hiện thực tại `Core/Src/traffic_light.c`, cung cấp các hàm mức cao `traffic_init()`, `traffic_set(lane, color)`, `traffic_set_both(lane1, lane2)`, `traffic_all_off()`, `traffic_all_red()`, và `traffic_set_tuning(color)`.
-- **Bất biến an toàn cứng ở tầng vận hành (`AUTO`/`MANUAL`):** Cả `traffic_set()` và `traffic_set_both()` đều kiểm tra nếu có yêu cầu đặt đồng thời cả 2 tuyến màu `GREEN` thì lập tức từ chối và ép về `traffic_all_red()`. Riêng `traffic_set_tuning(color)` được tách riêng cho chế độ `TUNING` để nhấp nháy chỉ báo đồng thời cả 2 cụm đèn (`Đỏ / Xanh / Vàng`) với chu kỳ 2 Hz khi người dùng chỉnh thời gian.
-- **Thứ tự ghi chống glitch:** Khi gọi `traffic_set_both(lane1, lane2)` để đảo pha, driver luôn xuất tín hiệu cho **tuyến không phải `GREEN` trước**, rồi mới xuất `GREEN` cho tuyến còn lại — loại bỏ xung thoáng qua khiến 2 tuyến cùng Xanh trong lúc ghi từng chân GPIO.
+- Hiện thực tại `Core/Src/traffic_light.c`, quản lý trạng thái 2 tuyến qua mảng nội bộ `current_color[2]` và hàm ghi phần cứng `traffic_write_hw(lane, color)` (ánh xạ 4 màu `OFF / RED / AMBER / GREEN` sang cặp mức logic `TL_SIG_*` trong `pin_config.h` và xuất ra `TL1_A/B`, `TL2_A/B`).
+- **Chức năng chi tiết của từng hàm API:**
+  - `traffic_init()`: Khởi tạo trạng thái ban đầu an toàn cho 2 cụm đèn bằng cách gọi `traffic_all_red()` (cả 2 tuyến Đỏ).
+  - `traffic_set(lane, color)`: Đặt màu (`OFF`, `RED`, `AMBER`, `GREEN`) cho riêng 1 tuyến (`LANE_1` hoặc `LANE_2`); trước khi ghi ra GPIO sẽ kiểm tra `current_color` của tuyến đối diện — nếu đặt `GREEN` trong khi tuyến kia đang `GREEN` thì lập tức từ chối và ép về `traffic_all_red()`.
+  - `traffic_set_both(lane1_color, lane2_color)`: Cập nhật đồng thời cả 2 tuyến trong các chế độ vận hành (`AUTO`, `MANUAL`). Hàm chặn tuyệt đối cặp `(GREEN, GREEN)` bằng cách ép về `traffic_all_red()`, đồng thời luôn xuất tín hiệu cho **tuyến không phải `GREEN` trước** rồi mới xuất `GREEN` cho tuyến còn lại để loại bỏ xung thoáng qua (glitch) khiến 2 tuyến cùng Xanh trong lúc ghi từng chân GPIO.
+  - `traffic_all_off()`: Tắt cả 2 cụm đèn (`OFF`, `OFF`), dùng trong pha tắt của chu kỳ nhấp nháy ở chế độ `TUNING`.
+  - `traffic_all_red()`: Ép cả 2 cụm đèn về Đỏ (`RED`, `RED`) — trạng thái an toàn mặc định khi khởi động, dừng khẩn cấp (`MAN_ALL_RED`), chuyển chế độ, hoặc khi phát hiện lệnh bật 2 đèn Xanh trái phép.
+  - `traffic_set_tuning(color)`: Hàm chỉ báo riêng cho chế độ `TUNING`, ghi trực tiếp cùng một màu (`RED`, `GREEN`, hoặc `AMBER`) ra cả 2 tuyến để kết hợp với `traffic_all_off()` tạo hiệu ứng nhấp nháy 2 Hz (`250 ms` sáng / `250 ms` tắt).
+- **Cơ chế an toàn & Ngoại lệ khi chỉnh đèn Xanh (`TUN_GREEN`):**
+  - Trong vận hành điều tiết giao thông (`AUTO` và `MANUAL`), bất biến an toàn *"không bao giờ 2 tuyến cùng Xanh"* luôn được đảm bảo cứng ở tầng driver thông qua `traffic_set()` / `traffic_set_both()` cùng thứ tự ghi chống glitch.
+  - Riêng trường hợp người dùng đang chỉnh thời gian đèn Xanh (`TUN_GREEN` trong `fsm_tuning.c`), hệ thống sử dụng API tách riêng `traffic_set_tuning(GREEN)` để vẫn cho phép nhấp nháy đèn Xanh trên cả 2 tuyến giúp nhận diện trực quan màu đang chỉnh, mà **không làm suy yếu hay tắt cơ chế bảo vệ** của `traffic_set()` và `traffic_set_both()`. Ngay khi thoát khỏi `TUNING`, hệ thống luôn gọi `traffic_all_red()` trước khi quay lại chế độ `AUTO`.
 
 #### 3.3.4 DHT20 và LCD (I2C)
 - Giao diện đã thống nhất tại `Core/Inc/dht20.h` và `Core/Inc/lcd.h` (giao tiếp `I2C1` trên `PB8/PB9`, không sử dụng `HAL_Delay()`):
