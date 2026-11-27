@@ -14,20 +14,53 @@
 #define LCD_BIT_EN          0x04U
 #define LCD_BIT_BACKLIGHT   0x08U
 
+static uint8_t lcd_i2c_addr = LCD_I2C_ADDR;
+volatile uint8_t lcd_detected_addr_7bit = LCD_I2C_ADDR_7BIT;
+
+static void lcd_detect_address(void)
+{
+    static const uint8_t candidates[] = {
+        0x21U, 0x27U, 0x3FU, 0x20U,
+        0x22U, 0x23U, 0x24U, 0x25U, 0x26U,
+        0x39U, 0x3AU, 0x3BU, 0x3CU, 0x3DU, 0x3EU
+    };
+
+    for (size_t i = 0U; i < (sizeof(candidates) / sizeof(candidates[0])); i++) {
+        uint8_t addr7 = candidates[i];
+        if (addr7 == DHT20_I2C_ADDR_7BIT) {
+            continue;
+        }
+        if (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)(addr7 << 1), 2U, LCD_I2C_TIMEOUT_MS) == HAL_OK) {
+            lcd_detected_addr_7bit = addr7;
+            lcd_i2c_addr = (uint8_t)(addr7 << 1);
+            return;
+        }
+    }
+}
+
 static void lcd_write_nibble(uint8_t nibble, uint8_t rs_flag)
 {
     uint8_t data = (uint8_t)((nibble & 0xF0U) | LCD_BIT_BACKLIGHT | (rs_flag ? LCD_BIT_RS : 0x00U));
     uint8_t seq[2];
 
     seq[0] = (uint8_t)(data | LCD_BIT_EN);
-    seq[1] = (uint8_t)(data & (uint8_t)(~LCD_BIT_EN));
-    HAL_I2C_Master_Transmit(&hi2c1, LCD_I2C_ADDR, seq, 2U, LCD_I2C_TIMEOUT_MS);
+    seq[1] = data;
+    HAL_I2C_Master_Transmit(&hi2c1, lcd_i2c_addr, seq, 2U, LCD_I2C_TIMEOUT_MS);
 }
 
 static void lcd_send_byte(uint8_t byte, uint8_t rs_flag)
 {
-    lcd_write_nibble((uint8_t)(byte & 0xF0U), rs_flag);
-    lcd_write_nibble((uint8_t)((byte << 4) & 0xF0U), rs_flag);
+    uint8_t ctrl_en  = (uint8_t)(LCD_BIT_BACKLIGHT | LCD_BIT_EN | (rs_flag ? LCD_BIT_RS : 0x00U));
+    uint8_t ctrl_low = (uint8_t)(LCD_BIT_BACKLIGHT | (rs_flag ? LCD_BIT_RS : 0x00U));
+    uint8_t data_u = (uint8_t)(byte & 0xF0U);
+    uint8_t data_l = (uint8_t)((byte << 4) & 0xF0U);
+    uint8_t seq[4];
+
+    seq[0] = (uint8_t)(data_u | ctrl_en);
+    seq[1] = (uint8_t)(data_u | ctrl_low);
+    seq[2] = (uint8_t)(data_l | ctrl_en);
+    seq[3] = (uint8_t)(data_l | ctrl_low);
+    HAL_I2C_Master_Transmit(&hi2c1, lcd_i2c_addr, seq, 4U, LCD_I2C_TIMEOUT_MS);
 }
 
 static void lcd_send_cmd(uint8_t cmd)
@@ -53,20 +86,32 @@ static void lcd_format_env_line(char *buf, size_t buf_size, float temp_c, float 
 
 void lcd_init(void)
 {
-    HAL_Delay(50U);
+    uint8_t idle = LCD_BIT_BACKLIGHT;
+
+    lcd_detect_address();
+    HAL_Delay(100U);
+    HAL_I2C_Master_Transmit(&hi2c1, lcd_i2c_addr, &idle, 1U, LCD_I2C_TIMEOUT_MS);
+    HAL_Delay(10U);
+
     lcd_write_nibble(0x30U, 0U);
     HAL_Delay(5U);
     lcd_write_nibble(0x30U, 0U);
-    HAL_Delay(1U);
+    HAL_Delay(5U);
     lcd_write_nibble(0x30U, 0U);
-    HAL_Delay(1U);
+    HAL_Delay(2U);
     lcd_write_nibble(0x20U, 0U);
-    HAL_Delay(1U);
+    HAL_Delay(10U);
 
     lcd_send_cmd(0x28U); /* 4-bit, 2 lines, 5x8 font */
-    lcd_send_cmd(0x0CU); /* Display ON, cursor OFF */
+    HAL_Delay(2U);
+    lcd_send_cmd(0x08U); /* Display OFF */
+    HAL_Delay(2U);
+    lcd_send_cmd(0x01U); /* Clear display */
+    HAL_Delay(5U);
     lcd_send_cmd(0x06U); /* Entry mode: increment */
-    lcd_clear();
+    HAL_Delay(2U);
+    lcd_send_cmd(0x0CU); /* Display ON, cursor OFF */
+    HAL_Delay(2U);
 }
 
 void lcd_clear(void)

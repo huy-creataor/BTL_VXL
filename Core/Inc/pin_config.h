@@ -94,28 +94,28 @@
 #define DHT20_I2C_ADDR_7BIT     0x38U
 #define DHT20_I2C_ADDR          (DHT20_I2C_ADDR_7BIT << 1)
 
-/* LCD I2C 7-bit address (update to 0x27 or 0x3F after Step 3.4 I2C scan) */
-#define LCD_I2C_ADDR_7BIT       0x27U
+/* LCD I2C 7-bit address (verified 0x21 on HCMUT/OhStem PCF8574 module) */
+#define LCD_I2C_ADDR_7BIT       0x21U
 #define LCD_I2C_ADDR            (LCD_I2C_ADDR_7BIT << 1)
 
 /* ========================================================================= */
-/* 3. Traffic Light 2-Bit Signal Encoding (TODO: Fill after Step 3.2 test)   */
+/* 3. Traffic Light 2-Bit Signal Encoding (Verified on HCMUT Module PCB)     */
 /* ========================================================================= */
 /*
- * Run Step 3.2 in main.c to observe which (A, B) combination maps to
- * OFF, RED, AMBER, GREEN on the Grove traffic light module, then update:
+ * HCMUT Traffic Light Module silkscreen:
+ *   00 -> OFF, 01 -> YELLOW (AMBER), 10 -> GREEN, 11 -> RED
  */
 #define TL_SIG_OFF_A            GPIO_PIN_RESET
 #define TL_SIG_OFF_B            GPIO_PIN_RESET
-
-#define TL_SIG_RED_A            GPIO_PIN_SET
-#define TL_SIG_RED_B            GPIO_PIN_RESET
 
 #define TL_SIG_AMBER_A          GPIO_PIN_RESET
 #define TL_SIG_AMBER_B          GPIO_PIN_SET
 
 #define TL_SIG_GREEN_A          GPIO_PIN_SET
-#define TL_SIG_GREEN_B          GPIO_PIN_SET
+#define TL_SIG_GREEN_B          GPIO_PIN_RESET
+
+#define TL_SIG_RED_A            GPIO_PIN_SET
+#define TL_SIG_RED_B            GPIO_PIN_SET
 
 /* ========================================================================= */
 /* 4. External HAL Peripheral Handles (Defined in CubeMX main.c)             */
