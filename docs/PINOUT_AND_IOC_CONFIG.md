@@ -56,25 +56,25 @@ Tài liệu này là nguồn chuẩn duy nhất để cả 2 thành viên cấu 
 
 ---
 
-## 3. Bảng kết quả kiểm thử phần cứng (Điền ở Bước 3)
+## 3. Bảng kết quả kiểm thử phần cứng (Đã xác nhận trên mạch thật)
 
 ### 3.1 Bảng tổ hợp tín hiệu đèn (Mục 3.2 - Thành viên A thực hiện)
 
-Sau khi chạy vòng lặp test 4 tổ hợp `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)`, điền vào bảng dưới đây và cập nhật 8 macro `TL_SIG_*` trong [Core/Inc/pin_config.h](../Core/Inc/pin_config.h):
+Đã xác nhận trực tiếp trên mạch đèn HCMUT (in trên PCB: `00-OFF, 01-YEL, 10-GRE, 11-RED`) và cập nhật 8 macro `TL_SIG_*` trong [Core/Inc/pin_config.h](../Core/Inc/pin_config.h):
 
 | Tín hiệu A (`TLx_A`) | Tín hiệu B (`TLx_B`) | Trạng thái đèn Tuyến 1 | Trạng thái đèn Tuyến 2 |
 |---|---|---|---|
-| `0` | `0` | `[Điền: Đỏ/Vàng/Xanh/Tắt]` | `[Điền: Đỏ/Vàng/Xanh/Tắt]` |
-| `0` | `1` | `[Điền]` | `[Điền]` |
-| `1` | `0` | `[Điền]` | `[Điền]` |
-| `1` | `1` | `[Điền]` | `[Điền]` |
+| `0` | `0` | `OFF` (Tắt) | `OFF` (Tắt) |
+| `0` | `1` | `AMBER` (Vàng) | `AMBER` (Vàng) |
+| `1` | `0` | `GREEN` (Xanh) | `GREEN` (Xanh) |
+| `1` | `1` | `RED` (Đỏ) | `RED` (Đỏ) |
 
 ### 3.2 Mức logic nút nhấn (Mục 3.3 - Thành viên A thực hiện)
 
-- Mức logic khi **nhấn** `BTN_1`..`BTN_4` (Grove): `[GPIO_PIN_RESET / GPIO_PIN_SET]` → cập nhật `BTN_PRESSED_STATE` trong [Core/Inc/pin_config.h](../Core/Inc/pin_config.h).
-- Mức logic khi **nhấn** `BTN_USER` (`PC13` trên board): `[thường là GPIO_PIN_RESET]`.
+- Mức logic khi **nhấn** `BTN_1`..`BTN_4` (Grove, dùng `GPIO_PULLUP` nội): `GPIO_PIN_RESET` (mức thấp) → đã cấu hình `BTN_PRESSED_STATE = GPIO_PIN_RESET` trong [Core/Inc/pin_config.h](../Core/Inc/pin_config.h).
+- Mức logic khi **nhấn** `BTN_USER` (`PC13` trên board): `GPIO_PIN_RESET` (mức thấp).
 
 ### 3.3 Địa chỉ I2C 7-bit (Mục 3.4 - Thành viên B thực hiện)
 
-- Địa chỉ `DHT20` tìm được: `0x38` (7-bit) → truyền cho HAL là `0x38 << 1`.
-- Địa chỉ `LCD` tìm được: `[0x27 hoặc 0x3F]` (7-bit) → cập nhật `LCD_I2C_ADDR_7BIT` trong [Core/Inc/pin_config.h](../Core/Inc/pin_config.h).
+- Địa chỉ `DHT20` tìm được: `0x38` (7-bit) → truyền cho HAL là `0x38 << 1 = 0x70`.
+- Địa chỉ `LCD` PCF8574 tìm được trên mạch thực tế: `0x21` (7-bit) → truyền cho HAL là `0x21 << 1 = 0x42`, đã cập nhật `LCD_I2C_ADDR_7BIT = 0x21U` trong [Core/Inc/pin_config.h](../Core/Inc/pin_config.h) kèm tự dò địa chỉ trong `lcd.c`.

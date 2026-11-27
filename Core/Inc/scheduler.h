@@ -13,9 +13,10 @@
 
 #include <stdint.h>
 
-#define SCH_MAX_TASKS           16U
+#define SCH_MAX_TASKS           40U
 #define SCH_TICK_PERIOD_MS      10U
-#define SCH_INVALID_TASK_ID     0xFFFFFFFFU
+#define NO_TASK_ID              0U
+#define SCH_INVALID_TASK_ID     NO_TASK_ID
 
 #define MS_TO_TICKS(ms)         ((uint32_t)(ms) / SCH_TICK_PERIOD_MS)
 
